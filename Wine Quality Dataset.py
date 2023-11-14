@@ -11,6 +11,8 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.utils import to_categorical
 import warnings
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
+
 
 # Desactivar las advertencias de métricas indefinidas
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
@@ -90,3 +92,53 @@ print(classification_report(y_test, y_pred_svm))
 # Informe de clasificación para la Red Neuronal
 print("\nInforme de Clasificación (Red Neuronal):")
 print(classification_report(y_test, y_pred_nn))
+
+# Definir funciones para calcular Sensitivity y Specificity
+def calculate_sensitivity(y_true, y_pred, class_label):
+    # Obtener índices de las muestras verdaderamente positivas y falsamente negativas para la clase específica
+    true_positives = np.sum((y_true == class_label) & (y_pred == class_label))
+    false_negatives = np.sum((y_true == class_label) & (y_pred != class_label))
+    
+    # Calcular Sensitivity
+    sensitivity = true_positives / (true_positives + false_negatives)
+    return sensitivity
+
+def calculate_specificity(y_true, y_pred, class_label):
+    # Obtener índices de las muestras verdaderamente negativas y falsamente positivas para la clase específica
+    true_negatives = np.sum((y_true != class_label) & (y_pred != class_label))
+    false_positives = np.sum((y_true != class_label) & (y_pred == class_label))
+    
+    # Calcular Specificity
+    specificity = true_negatives / (true_negatives + false_positives)
+    return specificity
+
+# Función para calcular y mostrar métricas
+def evaluate_model(y_true, y_pred, model_name):
+    accuracy = accuracy_score(y_true, y_pred)
+    precision = precision_score(y_true, y_pred, average='weighted')
+    f1 = f1_score(y_true, y_pred, average='weighted')
+    
+    unique_classes = np.unique(y_true)
+    for class_label in unique_classes:
+        sensitivity = calculate_sensitivity(y_true, y_pred, class_label)
+        specificity = calculate_specificity(y_true, y_pred, class_label)
+        print(f'\nMetrics for Class {class_label} ({model_name}):')
+        print(f'Sensitivity: {sensitivity}')
+        print(f'Specificity: {specificity}')
+
+    # Calcular Sensitivity y Specificity promediadas por clase
+    sensitivity_avg = np.mean([calculate_sensitivity(y_true, y_pred, class_label) for class_label in unique_classes])
+    specificity_avg = np.mean([calculate_specificity(y_true, y_pred, class_label) for class_label in unique_classes])
+
+    print(f'\nEvaluación del Modelo ({model_name}):')
+    print(f'Accuracy: {accuracy}')
+    print(f'Precision: {precision}')
+    print(f'Sensitivity (Avg): {sensitivity_avg}')
+    print(f'Specificity (Avg): {specificity_avg}')
+    print(f'F1 Score: {f1}')
+    
+# Evaluación de cada modelo
+evaluate_model(y_test, y_pred_logistic, 'Regresión Logística')
+evaluate_model(y_test, y_pred_knn, 'KNN')
+evaluate_model(y_test, y_pred_svm, 'SVM')
+evaluate_model(y_test, y_pred_nn, 'Red Neuronal')
